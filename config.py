@@ -40,8 +40,8 @@ class AppConfig:
     child_chunk_overlap: int = 40
 
     # Retrieval Settings
-    dense_top_k: int = 3 # 10
-    sparse_top_k: int = 3 # 10
+    dense_top_k: int = 10
+    sparse_top_k: int = 10
     final_top_parents: int = 2  # 1~2 top parent chunks injected into prompt
     bm25_token_pattern: str = r"\\[a-zA-Z]+|[a-zA-Z0-9]+|[^\s\w]"
 
