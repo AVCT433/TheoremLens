@@ -4,7 +4,7 @@ import unittest
 from config import config
 from ingestion import ParentChildChunker
 from retriever import (
-    CPUCrossEncoderReranker,
+    CrossEncoderReranker,
     InMemoryBM25Index,
     latex_regex_tokenizer,
 )

@@ -115,8 +115,8 @@ class InMemoryBM25Index:
         return hits
 
 
-class CPUCrossEncoderReranker:
-    """CPU-based Cross-Encoder reranker using BAAI/bge-reranker-base."""
+class CrossEncoderReranker:
+    """Cross-Encoder reranker using BAAI/bge-reranker-base."""
 
     def __init__(
         self,
@@ -165,14 +165,14 @@ class HybridRetriever:
     def __init__(
         self,
         vector_store: ChromaStore,
-        reranker: Optional[CPUCrossEncoderReranker] = None,
+        reranker: Optional[CrossEncoderReranker] = None,
         dense_top_k: int = config.dense_top_k,
         sparse_top_k: int = config.sparse_top_k,
         final_top_parents: int = config.final_top_parents,
         threshold: float = config.reranker_threshold,
     ):
         self.vector_store = vector_store
-        self.reranker = reranker or CPUCrossEncoderReranker(threshold=threshold)
+        self.reranker = reranker or CrossEncoderReranker(threshold=threshold)
         self.dense_top_k = dense_top_k
         self.sparse_top_k = sparse_top_k
         self.final_top_parents = final_top_parents
