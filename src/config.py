@@ -8,9 +8,9 @@ from typing import List
 @dataclass
 class AppConfig:
     # Base directories
-    base_dir: Path = Path(__file__).parent.resolve()
-    persist_directory: Path = field(default_factory=lambda: Path(__file__).parent.resolve() / "chroma_db")
-    upload_directory: Path = field(default_factory=lambda: Path(__file__).parent.resolve() / "uploads")
+    base_dir: Path = Path(__file__).parent.parent.resolve()
+    persist_directory: Path = field(default_factory=lambda: Path(__file__).parent.parent.resolve() / "chroma_db")
+    upload_directory: Path = field(default_factory=lambda: Path(__file__).parent.parent.resolve() / "uploads")
     collection_name: str = "math_rag_collection"
 
     # Hardware & LLM Settings (GPU: RTX 2060 Super 8GB)

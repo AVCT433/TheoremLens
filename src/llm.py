@@ -4,8 +4,8 @@ import logging
 from typing import Any, Dict, Generator, List, Optional
 
 import ollama
-from config import config
-from retriever import RetrievedParent
+from src.config import config
+from src.pipeline.retriever import RetrievedParent
 
 logger = logging.getLogger(__name__)
 

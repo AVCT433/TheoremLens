@@ -122,8 +122,8 @@ def run_e2e_test() -> None:
     # STEP 0: 모듈 임포트
     section("STEP 0 | 모듈 임포트 확인")
     try:
-        from pipeline import MathRAGPipeline  # noqa: F401
-        from llm import OllamaMathLLM
+        from src.pipeline.pipeline import MathRAGPipeline  # noqa: F401
+        from src.llm import OllamaMathLLM
         ok("모든 TheoremLens 모듈 임포트 성공")
     except ImportError as e:
         fail(f"임포트 실패: {e}")
@@ -149,7 +149,7 @@ def run_e2e_test() -> None:
 
     # STEP 2: 파이프라인 초기화
     section("STEP 2 | MathRAGPipeline 초기화")
-    from pipeline import MathRAGPipeline
+    from src.pipeline.pipeline import MathRAGPipeline
 
     t0 = time.time()
     pipeline = MathRAGPipeline()

@@ -8,8 +8,8 @@ from typing import Any, Dict, List, Tuple
 
 import gradio as gr
 
-from config import config
-from pipeline import MathRAGPipeline
+from src.config import config
+from src.pipeline.pipeline import MathRAGPipeline
 
 logging.basicConfig(
     level=logging.INFO,

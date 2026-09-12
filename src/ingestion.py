@@ -9,7 +9,7 @@ from typing import List, Optional, Tuple
 from docling.document_converter import DocumentConverter
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from config import config
+from src.config import config
 
 logger = logging.getLogger(__name__)
 
