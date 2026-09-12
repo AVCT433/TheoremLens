@@ -10,8 +10,8 @@ import numpy as np
 from rank_bm25 import BM25Okapi
 from sentence_transformers import CrossEncoder
 
-from src.config import config
-from src.pipeline.vector_store import ChromaStore
+from theoremlens.config import config
+from theoremlens.pipeline.vector_store import ChromaStore
 
 logger = logging.getLogger(__name__)
 

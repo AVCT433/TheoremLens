@@ -2,10 +2,25 @@
 .venv/
 .env
 
-# 파이썬 캐시
+# 파이썬 캐시 및 컴파일 파일
 __pycache__/
 *.py[cod]
 *$py.class
+
+# 패키징 및 빌드 아티팩트 (pip install -e .)
+build/
+dist/
+wheels/
+*.egg-info/
+*.egg
+
+# 테스트 및 커버리지
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter Notebook 체크포인트
+.ipynb_checkpoints/
 
 # ChromaDB 로컬 영구 저장소
 chroma_db/
@@ -19,6 +34,10 @@ logs/
 # IDE 설정
 .vscode/
 .idea/
+
+# OS 생성 파일
+.DS_Store
+Thumbs.db
 
 ## 설계 문서
 uploads/

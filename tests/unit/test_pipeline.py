@@ -1,14 +1,14 @@
 """Unit and integration tests for TheoremLens components."""
 
 import unittest
-from src.config import config
-from src.ingestion import ParentChildChunker
-from src.pipeline.retriever import (
+from theoremlens.config import config
+from theoremlens.ingestion import ParentChildChunker
+from theoremlens.pipeline.retriever import (
     CrossEncoderReranker,
     InMemoryBM25Index,
     latex_regex_tokenizer,
 )
-from src.pipeline.vector_store import ChromaStore
+from theoremlens.pipeline.vector_store import ChromaStore
 
 
 class TestTheoremLens(unittest.TestCase):

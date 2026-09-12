@@ -7,8 +7,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
-from src.config import config
-from src.ingestion import ChildChunk, ParentChunk
+from theoremlens.config import config
+from theoremlens.ingestion import ChildChunk, ParentChunk
 
 logger = logging.getLogger(__name__)
 

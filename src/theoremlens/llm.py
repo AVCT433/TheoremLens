@@ -4,8 +4,8 @@ import logging
 from typing import Any, Dict, Generator, List, Optional
 
 import ollama
-from src.config import config
-from src.pipeline.retriever import RetrievedParent
+from theoremlens.config import config
+from theoremlens.pipeline.retriever import RetrievedParent
 
 logger = logging.getLogger(__name__)
 

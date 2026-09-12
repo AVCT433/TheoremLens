@@ -5,11 +5,11 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Tuple
 
-from src.config import config
-from src.ingestion import MathDocumentParser, ParentChildChunker, ParentChunk
-from src.llm import OllamaMathLLM
-from src.pipeline.retriever import HybridRetriever, HybridSearchResult
-from src.pipeline.vector_store import ChromaStore
+from theoremlens.config import config
+from theoremlens.ingestion import MathDocumentParser, ParentChildChunker, ParentChunk
+from theoremlens.llm import OllamaMathLLM
+from theoremlens.pipeline.retriever import HybridRetriever, HybridSearchResult
+from theoremlens.pipeline.vector_store import ChromaStore
 
 logger = logging.getLogger(__name__)
 

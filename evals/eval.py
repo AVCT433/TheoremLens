@@ -17,8 +17,8 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-from src.config import config
-from src.pipeline.pipeline import MathRAGPipeline
+from theoremlens.config import config
+from theoremlens.pipeline.pipeline import MathRAGPipeline
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("EvalRunner")

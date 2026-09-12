@@ -22,9 +22,9 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-from src.config import config
-from src.pipeline.pipeline import MathRAGPipeline
-from src.pipeline.retriever import HybridSearchResult
+from theoremlens.config import config
+from theoremlens.pipeline.pipeline import MathRAGPipeline
+from theoremlens.pipeline.retriever import HybridSearchResult
 
 # ──────────────────────────────────────────────────────────────
 # Golden Dataset (eval.py와 동일)
