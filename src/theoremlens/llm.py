@@ -119,19 +119,30 @@ class OllamaMathLLM:
         """Checks if Ollama is accessible and if the requested model is pulled."""
         try:
             models_info = self.client.list()
-            # Ollama SDK 0.6+: Pydantic 모델 속성 접근 / 구버전: dict 접근 fallback
-            try:
-                models_list = models_info.models or []
-                model_names = [m.model for m in models_list]
-            except AttributeError:
-                models_list = models_info.get("models", [])
-                model_names = [m.get("model", "") for m in models_list]
+
+            # 1. SDK 버전에 따른 모델 리스트 추출 (객체 vs 딕셔너리)
+            if isinstance(models_info, dict):
+                raw_models = models_info.get("models") or []
+                # None이거나 빈 문자열인 경우를 걸러내고 순수 str 리스트로 보장
+                model_names = [
+                    m["model"]
+                    for m in raw_models
+                    if isinstance(m, dict) and m.get("model")
+                ]
+            else:
+                raw_models = getattr(models_info, "models") or []
+                # m.model이 None이 아닌 유효한 str만 리스트에 수집
+                model_names = [m.model for m in raw_models if getattr(m, "model", None)]
+
+            # 2. None이 완전히 제거된 str 리스트이므로 in 연산이 100% 안전함
             is_model_ready = any(self.model in name for name in model_names)
+
             return {
                 "accessible": True,
                 "model_ready": is_model_ready,
                 "installed_models": model_names,
             }
+
         except Exception as e:
             return {
                 "accessible": False,
