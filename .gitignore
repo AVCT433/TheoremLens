@@ -18,6 +18,7 @@ wheels/
 .pytest_cache/
 .coverage
 htmlcov/
+tests/results/
 
 # Jupyter Notebook 체크포인트
 .ipynb_checkpoints/
