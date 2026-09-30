@@ -25,3 +25,7 @@ explicit = true
 [tool.uv.sources]
 torch = { index = "pytorch-cu124" }
 torchvision = { index = "pytorch-cu124" }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
