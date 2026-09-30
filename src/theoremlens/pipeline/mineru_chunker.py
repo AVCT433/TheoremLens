@@ -293,7 +293,7 @@ def preprocess_mineru_data(content_list: list) -> list:
             else:
                 caption_text = str(img_captions)
 
-            block['text'] = f"[이미지 캡션: {caption_text}]"
+            block['text'] = f"[image caption: {caption_text}]"
             block['type'] = 'text'
 
         cleaned_blocks.append(block)
