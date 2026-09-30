@@ -8,6 +8,10 @@ from transformers import AutoTokenizer
 
 from theoremlens.config import config
 
+
+# Content 노드가 가장 깊은 부모(최하위 소제목)를 찾을 수 있도록 사용하는 가상 최대 레벨
+MAX_LEVEL = 9999
+
 # =============================================================================
 # 토크나이저 Lazy 초기화 (모듈 레벨 싱글턴)
 # =============================================================================
@@ -110,7 +114,7 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
 
         chunk_id = str(uuid.uuid4())
         # Content 노드의 parent_id: 레벨을 무한대로 취급 → 가장 깊은 부모
-        parent_id = _find_parent_id(float("inf"))
+        parent_id = _find_parent_id(MAX_LEVEL)
 
         unique_pages = sorted(list(set(current_page_indices))) if current_page_indices else []
 
