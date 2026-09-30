@@ -56,6 +56,7 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
     # 콘텐츠 누적 버퍼
     current_content_blocks: list[str] = []
     current_tokens: int = 0
+    current_page_indices: list[int] = []
 
     # ─────────────────────────────────────────────────────────────
     #  헬퍼: active_parents에서 parent_id 결정
@@ -92,7 +93,7 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
     # ─────────────────────────────────────────────────────────────
     def _flush_buffer():
         """누적된 content 버퍼를 하나의 content 청크로 확정하고 결과에 추가합니다."""
-        nonlocal global_index, current_content_blocks, current_tokens
+        nonlocal global_index, current_content_blocks, current_tokens, current_page_indices
 
         if not current_content_blocks:
             return
@@ -111,6 +112,8 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
         # Content 노드의 parent_id: 레벨을 무한대로 취급 → 가장 깊은 부모
         parent_id = _find_parent_id(float("inf"))
 
+        unique_pages = sorted(list(set(current_page_indices))) if current_page_indices else []
+
         result.append({
             "chunk_id": chunk_id,
             "parent_id": parent_id,
@@ -119,17 +122,19 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
             "text_level": None,
             "context_path": context_path,
             "content": content_text,
+            "page_idx": unique_pages
         })
         global_index += 1
 
         # 버퍼 초기화
         current_content_blocks = []
         current_tokens = 0
+        current_page_indices = []
 
     # ─────────────────────────────────────────────────────────────
     #  헬퍼: Header 청크 생성
     # ─────────────────────────────────────────────────────────────
-    def _emit_header(text: str, level: int):
+    def _emit_header(text: str, level: int, page_idx: Optional[int] = None):
         """Header 블록을 청크로 확정하고 active_parents를 갱신합니다."""
         nonlocal global_index
 
@@ -152,6 +157,8 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
         else:
             context_path = text.strip()
 
+        pages = [page_idx] if page_idx is not None else []
+
         result.append({
             "chunk_id": chunk_id,
             "parent_id": parent_id,
@@ -160,6 +167,7 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
             "text_level": level,
             "context_path": context_path,
             "content": text.strip(),
+            "page_idx": pages
         })
         global_index += 1
 
@@ -173,6 +181,7 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
         b_type = block.get("type", "")
         b_text = block.get("text", "")
         b_level = block.get("text_level")
+        b_page_idx = block.get("page_idx")
 
         if not b_text or not b_text.strip():
             continue
@@ -183,14 +192,14 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
         if b_level is not None and isinstance(b_level, int):
             # Header가 등장하면 버퍼에 쌓인 content를 무조건 Flush
             _flush_buffer()
-            _emit_header(b_text, b_level)
+            _emit_header(b_text, b_level, b_page_idx)
             continue
 
         # [2] Virtual Header: text_level 없지만 패턴 매칭 (Theorem, Proof 등)
         if virtual_header_re.match(b_text.strip()):
             # 가상 목차 승격: config에서 지정한 레벨로 header 취급
             _flush_buffer()
-            _emit_header(b_text, config.virtual_header_level)
+            _emit_header(b_text, config.virtual_header_level, b_page_idx)
             continue
 
         # [3] Content: 위 두 조건에 해당하지 않는 모든 블록
@@ -207,12 +216,16 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
             # 수식을 현재 버퍼에 추가 (SOFT_LIMIT 초과해도 강제 결합)
             current_content_blocks.append(b_text)
             current_tokens += new_tokens
+            if b_page_idx is not None:
+                current_page_indices.append(b_page_idx)
         else:
             # 일반 텍스트: SOFT_LIMIT 도달 시 Flush 후 새 버퍼 시작
             if current_content_blocks and (current_tokens + new_tokens >= config.soft_limit):
                 _flush_buffer()
             current_content_blocks.append(b_text)
             current_tokens += new_tokens
+            if b_page_idx is not None:
+                current_page_indices.append(b_page_idx)
 
     # ── 루프 종료 후 잔여 버퍼 Flush ──
     _flush_buffer()
