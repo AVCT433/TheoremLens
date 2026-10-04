@@ -278,7 +278,7 @@ def preprocess_mineru_data(content_list: list) -> list:
             if prev_text.strip().endswith(':'):
                 if any(char in b_text for char in ['{', '}', '\\', '$']):
                     # 수식 오분류: 텍스트를 $$ $$로 감싸고 텍스트 타입으로 변경
-                    block['text'] = f"$$ {b_text.strip()} $$"
+                    block['text'] = f"$$ {b_text.strip()} $$"           # 임베딩 모델에서 $$ ~ $$를 적절하게 처리할 수 있는지 확인 후 필요에 따라 $ ~ $로 수정 요망
                     block['type'] = 'text'
                 else:
                     continue  # 수식 기호가 없는 일반 푸터는 드롭
