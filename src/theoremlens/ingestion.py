@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+# pyrefly: ignore [missing-import]
 from docling.document_converter import DocumentConverter
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
