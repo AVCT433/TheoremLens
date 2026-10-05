@@ -195,11 +195,11 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
     # =================================================================
     for block in content_list:
         b_type = block.get("type", "")
-        b_text = block.get("text", "")
+        b_text = block.get("text", "").strip()
         b_level = block.get("text_level")
         b_page_idx = block.get("page_idx")
 
-        if not b_text or not b_text.strip():
+        if not b_text:
             continue
 
         # ─── node_type 판별 ───
@@ -214,7 +214,7 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
             continue
 
         # [2] Virtual Header: text_level 없지만 패턴 매칭 (Theorem 등)
-        if virtual_header_re.match(b_text.strip()):
+        if virtual_header_re.match(b_text):
             # 가상 목차 승격: config에서 지정한 레벨로 header 취급
             _flush_buffer()
             _emit_header(b_text, config.virtual_header_level, b_page_idx, node_type="theorem")
@@ -227,7 +227,7 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
         label = ""
         rest_text = ""
         for e_type, e_regex in entity_patterns:
-            m = e_regex.match(b_text.strip())
+            m = e_regex.match(b_text)
             if m:
                 matched_entity = e_type
                 label = m.group(1).strip()
@@ -256,7 +256,7 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
 
         # [4] Content / Equation: 위 조건에 해당하지 않는 모든 블록
         new_tokens = count_tokens(b_text)
-        is_equation = (b_type == "equation") or b_text.strip().startswith("$$")
+        is_equation = (b_type == "equation") or b_text.startswith("$$")
         current_block_type = "equation" if is_equation else "text"
 
         # 상태 머신 규칙: text -> text 연속 시 경계 분리
