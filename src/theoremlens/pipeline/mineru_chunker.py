@@ -47,15 +47,14 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
     Returns:
         list[dict]: 청크 딕셔너리의 평면 리스트 (스키마는 모듈 docstring 참조)
     """
-    # 컴파일된 가상 목차 정규식
-    virtual_header_re = re.compile(config.virtual_header_pattern, re.IGNORECASE)
+    # 가상 목차 정규식 (라벨과 나머지 본문 분리용)
+    virtual_header_re = re.compile(r"^(Theorem|Lemma|Proposition|Corollary|Definition)(.*)", re.IGNORECASE | re.DOTALL)
 
     # 독립 엔티티 정규식 (라벨과 나머지 본문 분리용)
     entity_patterns = [
-        ("proof", re.compile(r"^(Proof[\s\d\.\-:]*)(.*)", re.IGNORECASE | re.DOTALL)),
-        ("example", re.compile(r"^(Examples?[\s\d\.\-:]*)(.*)", re.IGNORECASE | re.DOTALL)),
-        ("definition", re.compile(r"^(Definition[\s\d\.\-:]*)(.*)", re.IGNORECASE | re.DOTALL)),
-        ("remark", re.compile(r"^((?:Remark|Note|Solution)[\s\d\.\-:]*)(.*)", re.IGNORECASE | re.DOTALL)),
+        ("proof", re.compile(r"^(Proof)(.*)", re.IGNORECASE | re.DOTALL)),
+        ("example", re.compile(r"^(Examples?)(.*)", re.IGNORECASE | re.DOTALL)),
+        ("remark", re.compile(r"^(Remark|Note|Solution)(.*)", re.IGNORECASE | re.DOTALL)),
     ]
 
     # ── 결과 리스트 & 상태 변수 ──
@@ -213,44 +212,43 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
             last_block_type = None
             continue
 
-        # [2] Virtual Header: text_level 없지만 패턴 매칭 (Theorem 등)
-        if virtual_header_re.match(b_text):
-            # 가상 목차 승격: config에서 지정한 레벨로 header 취급
-            _flush_buffer()
-            _emit_header(b_text, config.virtual_header_level, b_page_idx, node_type="theorem")
-            current_state_type = "content"
-            last_block_type = None
-            continue
-
-        # [3] Independent Entities (Proof, Example, Definition, etc.)
-        matched_entity = None
+        # [2] Virtual Header & Independent Entities (Theorem, Definition, Proof, Example, etc.)
         label = ""
         rest_text = ""
-        for e_type, e_regex in entity_patterns:
-            m = e_regex.match(b_text)
-            if m:
-                matched_entity = e_type
-                label = m.group(1).strip()
-                rest_text = m.group(2).strip()
-                break
+        node_type = "content"
+        header_level = None
         
-        if matched_entity:
+        m_vh = virtual_header_re.match(b_text)
+        if m_vh:
+            label = m_vh.group(1).strip()
+            rest_text = m_vh.group(2).strip()
+            node_type = "definition" if "definition" in label.lower() else "theorem"
+            header_level = config.virtual_header_level
+        else:
+            for e_type, e_regex in entity_patterns:
+                m = e_regex.match(b_text)
+                if m:
+                    label = m.group(1).strip()
+                    rest_text = m.group(2).strip()
+                    node_type = e_type
+                    header_level = config.entity_header_level
+                    break
+        
+        if header_level is not None:    # 헤더이거나 독립엔티티인 경우
             _flush_buffer()
-            current_state_type = matched_entity
-            last_block_type = "text"
             
-            # 라벨 삽입
-            current_content_blocks.append(label)
-            current_tokens += count_tokens(label)
-            if b_page_idx is not None:
-                current_page_indices.append(b_page_idx)
-                
-            # 뒤쪽 본문 삽입
+            # 헤더 승격
+            _emit_header(label, header_level, b_page_idx, node_type=node_type)
+            current_state_type = "content"
+            last_block_type = None
+            
+            # 뒤쪽 본문 삽입 (Content로 처리됨)
             if rest_text:
                 current_content_blocks.append(rest_text)
                 current_tokens += count_tokens(rest_text)
                 if b_page_idx is not None:
                     current_page_indices.append(b_page_idx)
+                last_block_type = "text"
                     
             continue
 
