@@ -44,7 +44,7 @@ class AppConfig:
     soft_limit: int = 400           # 일반 텍스트의 목표 청크 크기 (토큰 기준)
     hard_limit: int = 8000          # 수식 폭탄 방지용 절대 상한선 (토큰 기준)
     virtual_header_level: int = 4   # 가상 목차(Theorem 등)에 부여할 H-level
-    virtual_header_pattern: str = r'^(Theorem|Proof|Definition|Lemma|Example|Corollary|Remark)[\s\d\.\-]*[:\.]?'
+    virtual_header_pattern: str = r'^(Theorem|Lemma|Proposition|Corollary)[\s\d\.\-]*[:\.]?'
 
     # Retrieval Settings
     dense_top_k: int = 10

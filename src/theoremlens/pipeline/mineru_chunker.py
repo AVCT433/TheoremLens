@@ -50,6 +50,14 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
     # 컴파일된 가상 목차 정규식
     virtual_header_re = re.compile(config.virtual_header_pattern, re.IGNORECASE)
 
+    # 독립 엔티티 정규식 (라벨과 나머지 본문 분리용)
+    entity_patterns = [
+        ("proof", re.compile(r"^(Proof[\s\d\.\-:]*)(.*)", re.IGNORECASE | re.DOTALL)),
+        ("example", re.compile(r"^(Examples?[\s\d\.\-:]*)(.*)", re.IGNORECASE | re.DOTALL)),
+        ("definition", re.compile(r"^(Definition[\s\d\.\-:]*)(.*)", re.IGNORECASE | re.DOTALL)),
+        ("remark", re.compile(r"^((?:Remark|Note|Solution)[\s\d\.\-:]*)(.*)", re.IGNORECASE | re.DOTALL)),
+    ]
+
     # ── 결과 리스트 & 상태 변수 ──
     result: list[dict] = []
     global_index: int = 0
@@ -61,6 +69,10 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
     current_content_blocks: list[str] = []
     current_tokens: int = 0
     current_page_indices: list[int] = []
+    
+    # 상태 머신
+    current_state_type = "content"
+    last_block_type = None  # "text" | "equation" | None
 
     # ─────────────────────────────────────────────────────────────
     #  헬퍼: active_parents에서 parent_id 결정
@@ -97,7 +109,7 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
     # ─────────────────────────────────────────────────────────────
     def _flush_buffer():
         """누적된 content 버퍼를 하나의 content 청크로 확정하고 결과에 추가합니다."""
-        nonlocal global_index, current_content_blocks, current_tokens, current_page_indices
+        nonlocal global_index, current_content_blocks, current_tokens, current_page_indices, current_state_type
 
         if not current_content_blocks:
             return
@@ -122,7 +134,7 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
             "chunk_id": chunk_id,
             "parent_id": parent_id,
             "global_index": global_index,
-            "node_type": "content",
+            "node_type": current_state_type,
             "text_level": None,
             "context_path": context_path,
             "content": content_text,
@@ -138,7 +150,7 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
     # ─────────────────────────────────────────────────────────────
     #  헬퍼: Header 청크 생성
     # ─────────────────────────────────────────────────────────────
-    def _emit_header(text: str, level: int, page_idx: Optional[int] = None):
+    def _emit_header(text: str, level: int, page_idx: Optional[int] = None, node_type: str = "header"):
         """Header 블록을 청크로 확정하고 active_parents를 갱신합니다."""
         nonlocal global_index
 
@@ -167,7 +179,7 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
             "chunk_id": chunk_id,
             "parent_id": parent_id,
             "global_index": global_index,
-            "node_type": "header",
+            "node_type": node_type,
             "text_level": level,
             "context_path": context_path,
             "content": text.strip(),
@@ -196,27 +208,68 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
         if b_level is not None and isinstance(b_level, int):
             # Header가 등장하면 버퍼에 쌓인 content를 무조건 Flush
             _flush_buffer()
-            _emit_header(b_text, b_level, b_page_idx)
+            _emit_header(b_text, b_level, b_page_idx, node_type="header")
+            current_state_type = "content"
+            last_block_type = None
             continue
 
-        # [2] Virtual Header: text_level 없지만 패턴 매칭 (Theorem, Proof 등)
+        # [2] Virtual Header: text_level 없지만 패턴 매칭 (Theorem 등)
         if virtual_header_re.match(b_text.strip()):
             # 가상 목차 승격: config에서 지정한 레벨로 header 취급
             _flush_buffer()
-            _emit_header(b_text, config.virtual_header_level, b_page_idx)
+            _emit_header(b_text, config.virtual_header_level, b_page_idx, node_type="theorem")
+            current_state_type = "content"
+            last_block_type = None
             continue
 
-        # [3] Content: 위 두 조건에 해당하지 않는 모든 블록
-        new_tokens = count_tokens(b_text)
+        # [3] Independent Entities (Proof, Example, Definition, etc.)
+        matched_entity = None
+        label = ""
+        rest_text = ""
+        for e_type, e_regex in entity_patterns:
+            m = e_regex.match(b_text.strip())
+            if m:
+                matched_entity = e_type
+                label = m.group(1).strip()
+                rest_text = m.group(2).strip()
+                break
+        
+        if matched_entity:
+            _flush_buffer()
+            current_state_type = matched_entity
+            last_block_type = "text"
+            
+            # 라벨 삽입
+            current_content_blocks.append(label)
+            current_tokens += count_tokens(label)
+            if b_page_idx is not None:
+                current_page_indices.append(b_page_idx)
+                
+            # 뒤쪽 본문 삽입
+            if rest_text:
+                current_content_blocks.append(rest_text)
+                current_tokens += count_tokens(rest_text)
+                if b_page_idx is not None:
+                    current_page_indices.append(b_page_idx)
+                    
+            continue
 
-        # ─── 수식 바인딩 판별 ───
+        # [4] Content / Equation: 위 조건에 해당하지 않는 모든 블록
+        new_tokens = count_tokens(b_text)
         is_equation = (b_type == "equation") or b_text.strip().startswith("$$")
+        current_block_type = "equation" if is_equation else "text"
+
+        # 상태 머신 규칙: text -> text 연속 시 경계 분리
+        if current_block_type == "text" and last_block_type == "text":
+            _flush_buffer()
+            current_state_type = "content"
 
         if is_equation:
             # 수식 바인딩: 직전 문단과 분리 금지 → SOFT_LIMIT 무시하고 기존 버퍼에 결합
             if current_tokens + new_tokens >= config.hard_limit:
                 # 수식 폭탄 방어: HARD_LIMIT 초과 시 버퍼를 먼저 Flush 하고 수식을 새 버퍼에
                 _flush_buffer()
+                current_state_type = "content"
             # 수식을 현재 버퍼에 추가 (SOFT_LIMIT 초과해도 강제 결합)
             current_content_blocks.append(b_text)
             current_tokens += new_tokens
@@ -226,10 +279,13 @@ def chunk_mineru_math_doc(content_list: list) -> list[dict]:
             # 일반 텍스트: SOFT_LIMIT 도달 시 Flush 후 새 버퍼 시작
             if current_content_blocks and (current_tokens + new_tokens >= config.soft_limit):
                 _flush_buffer()
+                current_state_type = "content"
             current_content_blocks.append(b_text)
             current_tokens += new_tokens
             if b_page_idx is not None:
                 current_page_indices.append(b_page_idx)
+                
+        last_block_type = current_block_type
 
     # ── 루프 종료 후 잔여 버퍼 Flush ──
     _flush_buffer()
